@@ -2,98 +2,86 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <title>AI Video Creator Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Master Pro</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
-        .container { max-width: 800px; margin: auto; background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
-        h1 { color: #38bdf8; text-shadow: 0 0 10px #38bdf8; }
-        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; }
+        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: auto; background: #1e293b; padding: 25px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; }
         input { background: #0f172a; color: white; border: 1px solid #334155; }
-        button { background: linear-gradient(45deg, #3b82f6, #8b5cf6); color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        button:hover { transform: scale(1.02); box-shadow: 0 0 15px #8b5cf6; }
-        .step { background: #334155; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; border-left: 5px solid #38bdf8; }
-        video, audio { width: 100%; margin-top: 10px; border-radius: 10px; }
-        #status { color: #fbbf24; font-weight: bold; margin-top: 10px; }
+        button { background: #3b82f6; color: white; font-weight: bold; cursor: pointer; }
+        #status { color: #fbbf24; margin: 15px 0; font-weight: bold; }
+        .result-box { background: #334155; padding: 15px; border-radius: 10px; margin-top: 20px; text-align: left; display: none; }
+        video, audio { width: 100%; margin-top: 10px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🎬 AI Video Master</h1>
-    <p>बस टॉपिक लिखें और जादू देखें!</p>
-    
-    <input type="text" id="topic" placeholder="जैसे: सफलता के लिए सुबह की 5 आदतें">
-    <button id="masterBtn">पूरा वीडियो तैयार करें (Full Auto)</button>
-
+    <h2>🎬 AI Video Master Pro</h2>
+    <input type="text" id="topic" placeholder="अपना टॉपिक यहाँ लिखें...">
+    <button id="startBtn">मैजिक शुरू करें</button>
     <div id="status">सिस्टम तैयार है...</div>
 
-    <div class="step" id="scriptStep" style="display:none;">
-        <strong>📝 AI स्क्रिप्ट:</strong>
-        <p id="scriptText"></p>
-    </div>
-
-    <div class="step" id="audioStep" style="display:none;">
-        <strong>🔊 AI आवाज़:</strong>
-        <audio id="audioPlayer" controls></audio>
-    </div>
-
-    <div class="step" id="videoStep" style="display:none;">
-        <strong>📹 विजुअल क्लिप:</strong>
-        <div id="videoContainer"></div>
+    <div id="resBox" class="result-box">
+        <strong>📝 स्क्रिप्ट:</strong> <p id="outScript"></p>
+        <strong>🔊 आवाज़:</strong> <audio id="outAudio" controls></audio>
+        <strong>📹 वीडियो:</strong> <div id="outVideo"></div>
     </div>
 </div>
 
 <script>
-    const KEYS = {
-        gemini: "AIzaSyC2aoLEKGTaVtqkJ7ZRV4CICd03OfsKcwQ",
-        pexels: "5FoLxS7oaY0jDXnJXwj2xRZBffOP5kGVyj1pTnQZjL2GkqyFj8biY4YU",
-        hf: "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"
+    const CONFIG = {
+        G_KEY: "AIzaSyC2aoLEKGTaVtqkJ7ZRV4CICd03OfsKcwQ",
+        P_KEY: "5FoLxS7oaY0jDXnJXwj2xRZBffOP5kGVyj1pTnQZjL2GkqyFj8biY4YU",
+        H_KEY: "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"
     };
 
-    document.getElementById('masterBtn').onclick = async () => {
+    document.getElementById('startBtn').onclick = async () => {
         const topic = document.getElementById('topic').value;
         const status = document.getElementById('status');
+        const resBox = document.getElementById('resBox');
         if(!topic) return alert("टॉपिक लिखें!");
 
-        // Step 1: Gemini Script
         status.innerText = "⏳ AI स्क्रिप्ट लिख रहा है...";
+        resBox.style.display = "none";
+
         try {
-            const gResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEYS.gemini}`, {
+            // 1. Gemini AI Script
+            const gResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${CONFIG.G_KEY}`, {
                 method: "POST", headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({contents:[{parts:[{text:`Write a short 30-word motivational script in Hindi about: ${topic}`}]}]})
+                body: JSON.stringify({contents:[{parts:[{text:`Write a 20 word motivational quote in Hindi about ${topic}`}]}]})
             });
             const gData = await gResp.json();
             const script = gData.candidates[0].content.parts[0].text;
-            document.getElementById('scriptText').innerText = script;
-            document.getElementById('scriptStep').style.display = "block";
+            document.getElementById('outScript').innerText = script;
 
-            // Step 2: HuggingFace Voice
-            status.innerText = "⏳ स्क्रिप्ट को आवाज़ में बदल रहा है...";
-            const hfResp = await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-hin", {
-                headers: { Authorization: `Bearer ${KEYS.hf}` },
+            // 2. HuggingFace Voice
+            status.innerText = "⏳ आवाज़ तैयार हो रही है (इसमें 10s लग सकते हैं)...";
+            const hResp = await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-hin", {
+                headers: { Authorization: `Bearer ${CONFIG.H_KEY}` },
                 method: "POST", body: JSON.stringify({ inputs: script })
             });
-            const audioBlob = await hfResp.blob();
-            document.getElementById('audioPlayer').src = URL.createObjectURL(audioBlob);
-            document.getElementById('audioStep').style.display = "block";
+            if(!hResp.ok) throw new Error("Voice API Error");
+            const audioBlob = await hResp.blob();
+            document.getElementById('outAudio').src = URL.createObjectURL(audioBlob);
 
-            // Step 3: Pexels Video
-            status.innerText = "⏳ बैकग्राउंड वीडियो खोज रहा है...";
-            const pResp = await fetch(`https://api.pexels.com/v1/search?query=motivation&per_page=1`, {
-                headers: { Authorization: KEYS.pexels }
+            // 3. Pexels Video
+            status.innerText = "⏳ वीडियो क्लिप ढूँढ रहा हूँ...";
+            const pResp = await fetch(`https://api.pexels.com/v1/videos/search?query=${topic}&per_page=1`, {
+                headers: { Authorization: CONFIG.P_KEY }
             });
             const pData = await pResp.json();
             const videoUrl = pData.videos[0].video_files[0].link;
-            document.getElementById('videoContainer').innerHTML = `<video src="${videoUrl}" controls loop></video>`;
-            document.getElementById('videoStep').style.display = "block";
+            document.getElementById('outVideo').innerHTML = `<video src="${videoUrl}" controls loop></video>`;
 
-            status.innerText = "✅ आपका वीडियो पैक तैयार है!";
+            status.innerText = "✅ सब कुछ तैयार है!";
+            resBox.style.display = "block";
         } catch (e) {
-            status.innerText = "❌ एरर: चाबियों या नेटवर्क की समस्या।";
+            status.innerText = "❌ एरर: चाबियों की लिमिट या नेटवर्क की समस्या।";
             console.error(e);
         }
     };
 </script>
-
 </body>
 </html>
