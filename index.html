@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Video Creator Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
+        .container { max-width: 800px; margin: auto; background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
+        h1 { color: #38bdf8; text-shadow: 0 0 10px #38bdf8; }
+        input, button { width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px; border: none; font-size: 16px; }
+        input { background: #0f172a; color: white; border: 1px solid #334155; }
+        button { background: linear-gradient(45deg, #3b82f6, #8b5cf6); color: white; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { transform: scale(1.02); box-shadow: 0 0 15px #8b5cf6; }
+        .step { background: #334155; padding: 15px; border-radius: 10px; margin-top: 15px; text-align: left; border-left: 5px solid #38bdf8; }
+        video, audio { width: 100%; margin-top: 10px; border-radius: 10px; }
+        #status { color: #fbbf24; font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎬 AI Video Master</h1>
+    <p>बस टॉपिक लिखें और जादू देखें!</p>
+    
+    <input type="text" id="topic" placeholder="जैसे: सफलता के लिए सुबह की 5 आदतें">
+    <button id="masterBtn">पूरा वीडियो तैयार करें (Full Auto)</button>
+
+    <div id="status">सिस्टम तैयार है...</div>
+
+    <div class="step" id="scriptStep" style="display:none;">
+        <strong>📝 AI स्क्रिप्ट:</strong>
+        <p id="scriptText"></p>
+    </div>
+
+    <div class="step" id="audioStep" style="display:none;">
+        <strong>🔊 AI आवाज़:</strong>
+        <audio id="audioPlayer" controls></audio>
+    </div>
+
+    <div class="step" id="videoStep" style="display:none;">
+        <strong>📹 विजुअल क्लिप:</strong>
+        <div id="videoContainer"></div>
+    </div>
+</div>
+
+<script>
+    const KEYS = {
+        gemini: "AIzaSyC2aoLEKGTaVtqkJ7ZRV4CICd03OfsKcwQ",
+        pexels: "5FoLxS7oaY0jDXnJXwj2xRZBffOP5kGVyj1pTnQZjL2GkqyFj8biY4YU",
+        hf: "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"
+    };
+
+    document.getElementById('masterBtn').onclick = async () => {
+        const topic = document.getElementById('topic').value;
+        const status = document.getElementById('status');
+        if(!topic) return alert("टॉपिक लिखें!");
+
+        // Step 1: Gemini Script
+        status.innerText = "⏳ AI स्क्रिप्ट लिख रहा है...";
+        try {
+            const gResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${KEYS.gemini}`, {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({contents:[{parts:[{text:`Write a short 30-word motivational script in Hindi about: ${topic}`}]}]})
+            });
+            const gData = await gResp.json();
+            const script = gData.candidates[0].content.parts[0].text;
+            document.getElementById('scriptText').innerText = script;
+            document.getElementById('scriptStep').style.display = "block";
+
+            // Step 2: HuggingFace Voice
+            status.innerText = "⏳ स्क्रिप्ट को आवाज़ में बदल रहा है...";
+            const hfResp = await fetch("https://api-inference.huggingface.co/models/facebook/mms-tts-hin", {
+                headers: { Authorization: `Bearer ${KEYS.hf}` },
+                method: "POST", body: JSON.stringify({ inputs: script })
+            });
+            const audioBlob = await hfResp.blob();
+            document.getElementById('audioPlayer').src = URL.createObjectURL(audioBlob);
+            document.getElementById('audioStep').style.display = "block";
+
+            // Step 3: Pexels Video
+            status.innerText = "⏳ बैकग्राउंड वीडियो खोज रहा है...";
+            const pResp = await fetch(`https://api.pexels.com/v1/search?query=motivation&per_page=1`, {
+                headers: { Authorization: KEYS.pexels }
+            });
+            const pData = await pResp.json();
+            const videoUrl = pData.videos[0].video_files[0].link;
+            document.getElementById('videoContainer').innerHTML = `<video src="${videoUrl}" controls loop></video>`;
+            document.getElementById('videoStep').style.display = "block";
+
+            status.innerText = "✅ आपका वीडियो पैक तैयार है!";
+        } catch (e) {
+            status.innerText = "❌ एरर: चाबियों या नेटवर्क की समस्या।";
+            console.error(e);
+        }
+    };
+</script>
+
+</body>
+</html>
