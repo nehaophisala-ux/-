@@ -3,68 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pexels कहानी के आधार पर वीडियो</title>
+    <title>Gemini AI Text Tester</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b0f19; color: white; padding: 20px; text-align: center; }
-        .container { max-width: 600px; margin: auto; background: #161e2d; padding: 25px; border-radius: 20px; border: 1px solid #2d3748; }
-        textarea { width: 90%; height: 120px; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #4a5568; background: #0b0f19; color: white; font-size: 16px; resize: vertical; }
-        button { width: 100%; padding: 15px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; }
-        #status { color: #fbbf24; margin: 20px 0; font-size: 14px; background: rgba(251, 191, 36, 0.1); padding: 10px; border-radius: 8px; }
-        #videoContainer { margin-top: 25px; }
-        video { width: 100%; border-radius: 15px; margin-top: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
+        .container { max-width: 500px; margin: auto; background: #1e293b; padding: 25px; border-radius: 15px; border: 1px solid #334155; }
+        textarea { width: 90%; height: 100px; padding: 12px; border-radius: 8px; border: 1px solid #4a5568; background: #0f172a; color: white; margin-bottom: 10px; }
+        button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        #status { color: #fbbf24; margin: 15px 0; font-size: 14px; }
+        #outputText { background: #334155; padding: 15px; border-radius: 10px; text-align: left; display: none; margin-top: 15px; border-left: 4px solid #3b82f6; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🎥 Pexels से कहानी के वीडियो</h2>
-    <p style="font-size: 13px; color: #a0aec0;">अपनी कहानी का मुख्य विषय या कुछ कीवर्ड्स लिखें।</p>
-    
-    <textarea id="storyInput" placeholder="जैसे: एक खुश परिवार पार्क में खेल रहा है... (या सिर्फ 'Happy Family')"></textarea>
-    <button id="getVideoBtn">वीडियो खोजें</button>
-    
-    <div id="status">सिस्टम आपके आदेश का इंतज़ार कर रहा है...</div>
-
-    <div id="videoContainer"></div>
+    <h2>🤖 Gemini AI टेस्ट</h2>
+    <textarea id="prompt" placeholder="यहाँ कुछ पूछें (जैसे: एक जोक सुनाओ)..."></textarea>
+    <button id="sendBtn">जवाब मांगें</button>
+    <div id="status">तैयार...</div>
+    <div id="outputText"></div>
 </div>
 
 <script>
-    const PEXELS_KEY = "5FoLxS7oaY0jDXnJXwj2xRZBffOP5kGVyj1pTnQZjL2GkqyFj8biY4YU"; // आपकी Pexels API Key
+    // आपकी Gemini Key यहाँ है
+    const G_KEY = "AIzaSyC2aoLEKGTaVtqkJ7ZRV4CICd03OfsKcwQ"; 
 
-    document.getElementById('getVideoBtn').onclick = async () => {
-        const storyText = document.getElementById('storyInput').value;
+    document.getElementById('sendBtn').onclick = async () => {
+        const prompt = document.getElementById('prompt').value;
         const status = document.getElementById('status');
-        const videoContainer = document.getElementById('videoContainer');
+        const output = document.getElementById('outputText');
         
-        if(!storyText) {
-            alert("कृपया कहानी का मुख्य विषय या कीवर्ड्स लिखें!");
-            return;
-        }
+        if(!prompt) return alert("कुछ लिखें!");
 
-        status.innerText = "⏳ Pexels से वीडियो ढूँढा जा रहा है...";
-        videoContainer.innerHTML = ""; // पुराना वीडियो हटा दें
+        status.innerText = "⏳ Gemini सोच रहा है...";
+        output.style.display = "none";
 
         try {
-            // कहानी से मुख्य कीवर्ड्स निकालने का प्रयास (सरल तरीका)
-            // आप चाहें तो यहां Gemini AI का इस्तेमाल कर सकते हैं अगर आप कहानी से ऑटोमेटिक कीवर्ड्स निकलवाना चाहते हैं
-            const searchKeywords = storyText.split(' ').slice(0, 5).join(' '); // कहानी के पहले 5 शब्द
-
-            const pResp = await fetch(`https://api.pexels.com/v1/videos/search?query=${searchKeywords}&per_page=1`, {
-                headers: { Authorization: PEXELS_KEY }
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${G_KEY}`, {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({contents:[{parts:[{text: prompt}]}]})
             });
-            const pData = await pResp.json();
 
-            if(pData.videos && pData.videos.length > 0) {
-                const videoUrl = pData.videos[0].video_files[0].link;
-                videoContainer.innerHTML = `<video src="${videoUrl}" controls loop autoplay muted></video>`;
-                status.innerText = "✅ वीडियो मिल गया (कॉपीराइट मुक्त)!";
+            const data = await resp.json();
+            
+            if(data.candidates && data.candidates[0].content.parts[0].text) {
+                output.innerText = data.candidates[0].content.parts[0].text;
+                output.style.display = "block";
+                status.innerText = "✅ जवाब मिल गया!";
             } else {
-                status.innerText = `❌ "${searchKeywords}" पर कोई वीडियो नहीं मिला।`;
+                status.innerText = "❌ कोई जवाब नहीं मिला।";
             }
-
-        } catch (error) {
-            status.innerText = "❌ एरर: नेटवर्क या Pexels API Key की समस्या।";
-            console.error(error);
+        } catch (e) {
+            status.innerText = "❌ एरर: चाबी गलत है या नेटवर्क की समस्या।";
+            console.error(e);
         }
     };
 </script>
