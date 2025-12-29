@@ -2,71 +2,70 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenAI (ChatGPT) Text Tester</title>
+    <title>Hugging Face Audio Generator</title>
     <style>
         body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
-        .container { max-width: 500px; margin: auto; background: #1e293b; padding: 25px; border-radius: 15px; border: 1px solid #334155; }
-        
-        /* चाबी वाला बॉक्स */
-        .key-box { width: 90%; padding: 10px; border-radius: 8px; border: 1px solid #fbbf24; background: #1e293b; color: white; margin-bottom: 15px; font-size: 13px; }
-        
-        textarea { width: 90%; height: 100px; padding: 12px; border-radius: 8px; border: 1px solid #4a5568; background: #0f172a; color: white; margin-bottom: 10px; }
-        button { width: 100%; padding: 12px; background: #10a37f; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        #status { color: #fbbf24; margin: 15px 0; font-size: 14px; }
-        #outputText { background: #334155; padding: 15px; border-radius: 10px; text-align: left; display: none; margin-top: 15px; border-left: 4px solid #10a37f; white-space: pre-wrap; }
+        .container { max-width: 600px; margin: auto; background: #1e293b; padding: 25px; border-radius: 15px; border: 1px solid #334155; }
+        input, textarea { width: 90%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #4a5568; background: #0f172a; color: white; }
+        button { width: 100%; padding: 12px; background: #ffbd45; color: black; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        #status { color: #fbbf24; margin: 15px 0; }
+        audio { width: 100%; margin-top: 20px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🤖 OpenAI (GPT-4o) टेस्ट</h2>
+    <h2>🎙️ AI ऑडियो जेनेरेटर (Hugging Face)</h2>
     
-    <input type="password" id="apiKeyInput" class="key-box" placeholder="अपनी OpenAI Key यहाँ पेस्ट करें...">
+    <input type="password" id="hfKey" placeholder="अपनी Hugging Face API Key यहाँ पेस्ट करें...">
     
-    <textarea id="prompt" placeholder="यहाँ कुछ पूछें (OpenAI जवाब देगा)..."></textarea>
-    <button id="sendBtn">OpenAI से पूछें</button>
+    <textarea id="textInput" rows="6" placeholder="यहाँ अपनी कहानी या टेक्स्ट लिखें जिसे ऑडियो में बदलना है..."></textarea>
+    
+    <button id="genAudioBtn">MP3 ऑडियो बनाएँ</button>
+    
     <div id="status">तैयार...</div>
-    <div id="outputText"></div>
+    <audio id="audioPlayer" controls></audio>
 </div>
 
 <script>
-    document.getElementById('sendBtn').onclick = async () => {
-        const apiKey = document.getElementById('apiKeyInput').value; // यहाँ से चाबी उठाएगा
-        const prompt = document.getElementById('prompt').value;
+    document.getElementById('genAudioBtn').onclick = async () => {
+        const hfKey = document.getElementById('hfKey').value;
+        const text = document.getElementById('textInput').value;
         const status = document.getElementById('status');
-        const output = document.getElementById('outputText');
-        
-        if(!apiKey) return alert("पहले अपनी API Key डालें!");
-        if(!prompt) return alert("कुछ पूछें!");
+        const player = document.getElementById('audioPlayer');
 
-        status.innerText = "⏳ OpenAI सोच रहा है...";
-        output.style.display = "none";
+        if(!hfKey) return alert("कृपया Hugging Face Key डालें!");
+        if(!text) return alert("कुछ टेक्स्ट लिखें!");
+
+        status.innerText = "⏳ Hugging Face ऑडियो बना रहा है... कृपया इंतज़ार करें।";
+        player.style.display = "none";
 
         try {
-            const resp = await fetch(`https://api.openai.com/v1/chat/completions`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${apiKey}` // इनपुट वाली चाबी यहाँ इस्तेमाल होगी
-                },
-                body: JSON.stringify({
-                    model: "gpt-4o-mini",
-                    messages: [{role: "user", content: prompt}]
-                })
-            });
+            // हम 'facebook/mms-tts-hin' मॉडल का उपयोग कर रहे हैं जो हिंदी के लिए बेस्ट है
+            const response = await fetch(
+                "https://api-inference.huggingface.co/models/facebook/mms-tts-hin",
+                {
+                    headers: { 
+                        "Authorization": `Bearer ${hfKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    method: "POST",
+                    body: JSON.stringify({ "inputs": text }),
+                }
+            );
 
-            const data = await resp.json();
+            if (!response.ok) throw new Error("API एरर या गलत चाबी।");
+
+            const blob = await response.blob();
+            const audioUrl = URL.createObjectURL(blob);
             
-            if(data.choices && data.choices[0].message.content) {
-                output.innerText = data.choices[0].message.content;
-                output.style.display = "block";
-                status.innerText = "✅ OpenAI ने जवाब दे दिया!";
-            } else {
-                status.innerText = "❌ एरर: " + (data.error ? data.error.message : "जवाब नहीं मिला।");
-            }
+            player.src = audioUrl;
+            player.style.display = "block";
+            status.innerText = "✅ ऑडियो तैयार है! नीचे प्ले करें।";
+            player.play();
+
         } catch (e) {
-            status.innerText = "❌ नेटवर्क एरर या सर्वर समस्या।";
+            status.innerText = "❌ एरर: " + e.message;
             console.error(e);
         }
     };
