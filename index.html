@@ -7,6 +7,10 @@
     <style>
         body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
         .container { max-width: 500px; margin: auto; background: #1e293b; padding: 25px; border-radius: 15px; border: 1px solid #334155; }
+        
+        /* चाबी वाला बॉक्स */
+        .key-box { width: 90%; padding: 10px; border-radius: 8px; border: 1px solid #fbbf24; background: #1e293b; color: white; margin-bottom: 15px; font-size: 13px; }
+        
         textarea { width: 90%; height: 100px; padding: 12px; border-radius: 8px; border: 1px solid #4a5568; background: #0f172a; color: white; margin-bottom: 10px; }
         button { width: 100%; padding: 12px; background: #10a37f; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         #status { color: #fbbf24; margin: 15px 0; font-size: 14px; }
@@ -17,6 +21,9 @@
 
 <div class="container">
     <h2>🤖 OpenAI (GPT-4o) टेस्ट</h2>
+    
+    <input type="password" id="apiKeyInput" class="key-box" placeholder="अपनी OpenAI Key यहाँ पेस्ट करें...">
+    
     <textarea id="prompt" placeholder="यहाँ कुछ पूछें (OpenAI जवाब देगा)..."></textarea>
     <button id="sendBtn">OpenAI से पूछें</button>
     <div id="status">तैयार...</div>
@@ -24,29 +31,27 @@
 </div>
 
 <script>
-    // आपकी नई OpenAI Key यहाँ है
-    const O_KEY = "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"; 
-
     document.getElementById('sendBtn').onclick = async () => {
+        const apiKey = document.getElementById('apiKeyInput').value; // यहाँ से चाबी उठाएगा
         const prompt = document.getElementById('prompt').value;
         const status = document.getElementById('status');
         const output = document.getElementById('outputText');
         
-        if(!prompt) return alert("कुछ लिखें!");
+        if(!apiKey) return alert("पहले अपनी API Key डालें!");
+        if(!prompt) return alert("कुछ पूछें!");
 
         status.innerText = "⏳ OpenAI सोच रहा है...";
         output.style.display = "none";
 
         try {
-            // OpenAI API को कॉल करने का तरीका
             const resp = await fetch(`https://api.openai.com/v1/chat/completions`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${O_KEY}`
+                    "Authorization": `Bearer ${apiKey}` // इनपुट वाली चाबी यहाँ इस्तेमाल होगी
                 },
                 body: JSON.stringify({
-                    model: "gpt-4o-mini", // आप "gpt-4o" भी लिख सकते हैं
+                    model: "gpt-4o-mini",
                     messages: [{role: "user", content: prompt}]
                 })
             });
@@ -61,7 +66,7 @@
                 status.innerText = "❌ एरर: " + (data.error ? data.error.message : "जवाब नहीं मिला।");
             }
         } catch (e) {
-            status.innerText = "❌ नेटवर्क एरर या गलत चाबी।";
+            status.innerText = "❌ नेटवर्क एरर या सर्वर समस्या।";
             console.error(e);
         }
     };
