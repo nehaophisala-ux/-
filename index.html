@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini AI Text Tester</title>
+    <title>OpenAI (ChatGPT) Text Tester</title>
     <style>
         body { font-family: sans-serif; background: #0f172a; color: white; padding: 20px; text-align: center; }
         .container { max-width: 500px; margin: auto; background: #1e293b; padding: 25px; border-radius: 15px; border: 1px solid #334155; }
         textarea { width: 90%; height: 100px; padding: 12px; border-radius: 8px; border: 1px solid #4a5568; background: #0f172a; color: white; margin-bottom: 10px; }
-        button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        button { width: 100%; padding: 12px; background: #10a37f; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         #status { color: #fbbf24; margin: 15px 0; font-size: 14px; }
-        #outputText { background: #334155; padding: 15px; border-radius: 10px; text-align: left; display: none; margin-top: 15px; border-left: 4px solid #3b82f6; }
+        #outputText { background: #334155; padding: 15px; border-radius: 10px; text-align: left; display: none; margin-top: 15px; border-left: 4px solid #10a37f; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🤖 Gemini AI टेस्ट</h2>
-    <textarea id="prompt" placeholder="यहाँ कुछ पूछें (जैसे: एक जोक सुनाओ)..."></textarea>
-    <button id="sendBtn">जवाब मांगें</button>
+    <h2>🤖 OpenAI (GPT-4o) टेस्ट</h2>
+    <textarea id="prompt" placeholder="यहाँ कुछ पूछें (OpenAI जवाब देगा)..."></textarea>
+    <button id="sendBtn">OpenAI से पूछें</button>
     <div id="status">तैयार...</div>
     <div id="outputText"></div>
 </div>
 
 <script>
-    // आपकी Gemini Key यहाँ है
-    const G_KEY = "AIzaSyC2aoLEKGTaVtqkJ7ZRV4CICd03OfsKcwQ"; 
+    // आपकी नई OpenAI Key यहाँ है
+    const O_KEY = "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"; 
 
     document.getElementById('sendBtn').onclick = async () => {
         const prompt = document.getElementById('prompt').value;
@@ -34,26 +34,34 @@
         
         if(!prompt) return alert("कुछ लिखें!");
 
-        status.innerText = "⏳ Gemini सोच रहा है...";
+        status.innerText = "⏳ OpenAI सोच रहा है...";
         output.style.display = "none";
 
         try {
-            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${G_KEY}`, {
-                method: "POST", headers: {"Content-Type":"application/json"},
-                body: JSON.stringify({contents:[{parts:[{text: prompt}]}]})
+            // OpenAI API को कॉल करने का तरीका
+            const resp = await fetch(`https://api.openai.com/v1/chat/completions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${O_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-4o-mini", // आप "gpt-4o" भी लिख सकते हैं
+                    messages: [{role: "user", content: prompt}]
+                })
             });
 
             const data = await resp.json();
             
-            if(data.candidates && data.candidates[0].content.parts[0].text) {
-                output.innerText = data.candidates[0].content.parts[0].text;
+            if(data.choices && data.choices[0].message.content) {
+                output.innerText = data.choices[0].message.content;
                 output.style.display = "block";
-                status.innerText = "✅ जवाब मिल गया!";
+                status.innerText = "✅ OpenAI ने जवाब दे दिया!";
             } else {
-                status.innerText = "❌ कोई जवाब नहीं मिला।";
+                status.innerText = "❌ एरर: " + (data.error ? data.error.message : "जवाब नहीं मिला।");
             }
         } catch (e) {
-            status.innerText = "❌ एरर: चाबी गलत है या नेटवर्क की समस्या।";
+            status.innerText = "❌ नेटवर्क एरर या गलत चाबी।";
             console.error(e);
         }
     };
